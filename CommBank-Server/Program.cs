@@ -5,14 +5,15 @@ using MongoDB.Driver;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Configuration.SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("Secrets.json");
+// FORCED CONFIGURATION: Hardcoding your connection string parameters directly
+var connectionString = "mongodb+srv://dbUser:CommbankPass2026@commbankcluster.zb1huaw.mongodb.net/?appName=CommbankCluster";
+var databaseName = "commbank"; // matches your lowercase Atlas database
 
-var mongoClient = new MongoClient(builder.Configuration.GetConnectionString("CommBank"));
-var mongoDatabase = mongoClient.GetDatabase("CommBank");
+var mongoClient = new MongoClient(connectionString);
+var mongoDatabase = mongoClient.GetDatabase(databaseName);
 
 IAccountsService accountsService = new AccountsService(mongoDatabase);
 IAuthService authService = new AuthService(mongoDatabase);
@@ -43,11 +44,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Commented out to prevent local port redirect mismatches
+// app.UseHttpsRedirection();
 
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
-
