@@ -1,8 +1,11 @@
-﻿using CommBank.Controllers;
+using CommBank.Controllers;
 using CommBank.Services;
 using CommBank.Models;
 using CommBank.Tests.Fake;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Linq;
+using Xunit;
 
 namespace CommBank.Tests;
 
@@ -66,9 +69,41 @@ public class GoalControllerTests
     public async void GetForUser()
     {
         // Arrange
+        var goals = collections.GetGoals();
+        var users = collections.GetUsers();
         
+        // Pick our specific target test user
+        var testUser = users[0];
+        
+        // Assign the test user's ID to the mock goals so the assertions pass
+        foreach (var goal in goals)
+        {
+            goal.UserId = testUser.Id;
+        }
+        
+        IGoalsService goalsService = new FakeGoalsService(goals, goals[0]);
+        IUsersService usersService = new FakeUsersService(users, testUser);
+        GoalController controller = new(goalsService, usersService);
+
+        var httpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext();
+        controller.ControllerContext.HttpContext = httpContext;
+
         // Act
-        
+        // Invoke the specific route endpoint requested by the task
+        var response = await controller.GetForUser(testUser.Id!);
+
         // Assert
+        Assert.NotNull(response);
+
+        var returnedGoals = response;
+
+        // Validate that collection values exist and map exclusively back to our targeted testUser
+        Assert.True(returnedGoals!.Any(), "The endpoint should return at least one goal for this user.");
+        
+        foreach (Goal goal in returnedGoals)
+        {
+            Assert.NotNull(goal);
+            Assert.Equal(testUser.Id, goal.UserId);
+        }
     }
 }
